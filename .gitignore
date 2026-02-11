@@ -29,7 +29,6 @@ yarn-error.log*
 cache/
 broadcast/
 artifacts/
-lib/
 
 # IDE
 .idea/

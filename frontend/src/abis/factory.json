@@ -1,0 +1,4 @@
+[
+  "function getPair(address tokenA, address tokenB) view returns (address)",
+  "function createPair(address tokenA, address tokenB) returns (address)"
+]

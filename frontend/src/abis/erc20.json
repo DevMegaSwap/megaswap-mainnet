@@ -1,0 +1,8 @@
+[
+  "function balanceOf(address) view returns (uint)",
+  "function approve(address spender, uint amount) returns (bool)",
+  "function allowance(address owner, address spender) view returns (uint)",
+  "function transfer(address to, uint amount) returns (bool)",
+  "function symbol() view returns (string)",
+  "function decimals() view returns (uint8)"
+]
