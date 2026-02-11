@@ -1,40 +1,36 @@
-"use client";
+import { useState, useEffect } from "react";
+import { ethers } from "ethers";
+import ERC20_ABI from "@/abis/erc20.json";
 
-import { useState, useEffect } from 'react';
-import { ethers } from 'ethers';
-import { getTokenBalance } from '@/lib/blockchain';
-
-export function useTokenBalance(
-  provider: ethers.BrowserProvider | null,
-  tokenAddress: string | undefined,
-  account: string
-) {
-  const [balance, setBalance] = useState<string>("0");
-  const [loading, setLoading] = useState(false);
+export function useTokenBalance(account, tokenAddress, provider) {
+  const [balance, setBalance] = useState("0.00");
 
   useEffect(() => {
-    if (!provider || !tokenAddress || !account) {
-      setBalance("0");
+    if (!account || !tokenAddress || !provider) {
+      setBalance("0.00");
       return;
     }
 
     const fetchBalance = async () => {
-      setLoading(true);
       try {
-        const bal = await getTokenBalance(provider, tokenAddress, account);
-        setBalance(bal);
+        if (tokenAddress === "ETH") {
+          const bal = await provider.getBalance(account);
+          setBalance(ethers.formatEther(bal));
+        } else {
+          const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+          const bal = await contract.balanceOf(account);
+          setBalance(ethers.formatEther(bal));
+        }
       } catch (error) {
         console.error("Balance fetch error:", error);
-        setBalance("0");
-      } finally {
-        setLoading(false);
+        setBalance("0.00");
       }
     };
 
     fetchBalance();
-    const interval = setInterval(fetchBalance, 10000);
+    const interval = setInterval(fetchBalance, 5000);
     return () => clearInterval(interval);
-  }, [provider, tokenAddress, account]);
+  }, [account, tokenAddress, provider]);
 
-  return { balance, loading };
+  return balance;
 }

@@ -1,15 +1,15 @@
-export const MAINNET_CHAIN_ID = 4326;
+import { ethers } from "ethers";
 
-export const MAINNET_NETWORK = {
-  chainId: '0x10e6',
-  chainName: 'MegaETH',
-  rpcUrls: ['https://mainnet.megaeth.com/rpc'],
+export const MEGAETH_NETWORK = {
+  chainId: "0x10e6",
+  chainName: "MegaETH Mainnet",
   nativeCurrency: {
-    name: 'ETH',
-    symbol: 'ETH',
-    decimals: 18
+    name: "Ether",
+    symbol: "ETH",
+    decimals: 18,
   },
-  blockExplorerUrls: ['https://megaeth.blockscout.com']
+  rpcUrls: ["https://mainnet.megaeth.com/rpc"],
+  blockExplorerUrls: ["https://megaeth.blockscout.com"],
 };
 
 export const CONTRACTS = {
@@ -19,23 +19,17 @@ export const CONTRACTS = {
   WETH: "0x4200000000000000000000000000000000000006"
 };
 
-export const INIT_CODE_HASH = "0x1474833e64fa906d3ae877b14fdd48c3bd13e0da323e86beb74e8e736980c175";
-
-export const NETWORK = MAINNET_NETWORK;
-
 export const DEFAULT_TOKENS = [
   {
     address: "ETH",
     symbol: "ETH",
-    name: "Ethereum",
-    decimals: 18,
-    logoURI: ""
+    name: "Ether",
+    decimals: 18
   },
   {
     address: CONTRACTS.WETH,
     symbol: "WETH",
     name: "Wrapped Ether",
-    decimals: 18,
-    logoURI: ""
+    decimals: 18
   }
 ];

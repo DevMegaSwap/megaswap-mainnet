@@ -1,25 +1,25 @@
 {
   "name": "megaswap-frontend",
-  "version": "0.0.0",
-  "type": "module",
+  "version": "1.0.0",
+  "private": true,
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
   },
   "dependencies": {
-    "ethers": "^6.11.1",
+    "next": "14.2.35",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "ethers": "^6.11.1"
   },
   "devDependencies": {
-    "@types/react": "^18.3.1",
-    "@types/react-dom": "^18.3.1",
-    "@vitejs/plugin-react": "^4.3.4",
-    "autoprefixer": "^10.4.24",
-    "postcss": "^8.5.6",
+    "typescript": "^5",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
     "tailwindcss": "^3.4.1",
-    "typescript": "~5.6.2",
-    "vite": "^6.0.5"
+    "postcss": "^8",
+    "autoprefixer": "^10"
   }
 }
