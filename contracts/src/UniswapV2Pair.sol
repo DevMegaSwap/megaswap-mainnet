@@ -122,7 +122,7 @@ contract UniswapV2Pair is UniswapV2ERC20 {
                 uint rootKLast = Math.sqrt(_kLast);
                 if (rootK > rootKLast) {
                     uint numerator = totalSupply * (rootK - rootKLast);
-                    uint denominator = rootK * 5 + rootKLast;
+                    uint denominator = rootK * 5 + rootKLast; // 1/6 of LP fees = 0.05% of 0.3% total
                     uint liquidity = numerator / denominator;
                     if (liquidity > 0) _mint(feeTo, liquidity);
                 }
@@ -200,6 +200,7 @@ contract UniswapV2Pair is UniswapV2ERC20 {
         uint amount1In = balance1 > _reserve1 - amount1Out ? balance1 - (_reserve1 - amount1Out) : 0;
         require(amount0In > 0 || amount1In > 0, 'INSUFFICIENT_INPUT_AMOUNT');
         {
+        // 0.3% fee (0.25% to LPs + 0.05% to protocol via feeTo)
         uint balance0Adjusted = balance0 * 1000 - amount0In * 3;
         uint balance1Adjusted = balance1 * 1000 - amount1In * 3;
         require(balance0Adjusted * balance1Adjusted >= uint(_reserve0) * _reserve1 * 1000**2, 'K');

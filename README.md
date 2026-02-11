@@ -1,13 +1,27 @@
-# 🚀 MegaSwap - Complete DEX on MegaETH Mainnet
+# 🚀 MegaSwap - DEX on MegaETH Mainnet
 
-Production-ready decentralized exchange with:
-- ✅ Token swaps with DexScreener price integration
-- ✅ Add/Remove liquidity with dual approvals
+**FIXED:** All network parameters corrected to actual MegaETH Mainnet.
+
+## Features
+
+- ✅ 0.3% swap fee (0.25% to LPs + 0.05% to protocol via feeTo)
+- ✅ Uniswap V2 AMM
 - ✅ LP token locking
-- ✅ Token import with logo fetching
-- ✅ Complete Uniswap V2 fork
+- ✅ Complete frontend with MetaMask
+- ✅ MegaEVM compatible deployment
 
-## Quick Start
+---
+
+## Network Info
+
+- **Chain ID:** 4326 (0x10e6)
+- **RPC:** https://mainnet.megaeth.com/rpc
+- **Explorer:** https://megaeth.blockscout.com
+- **WETH:** 0x4200000000000000000000000000000000000006
+
+---
+
+## Quick Deploy
 
 ### 1. Deploy Contracts
 ```bash
@@ -16,7 +30,14 @@ export PRIVATE_KEY="0xyour_mainnet_private_key"
 ./deploy.sh
 ```
 
-**Save all deployed addresses!**
+**CRITICAL:** After deployment, set the feeTo address:
+```bash
+cast send <FACTORY_ADDRESS> 'setFeeTo(address)' <YOUR_ADDRESS> \
+  --rpc-url https://mainnet.megaeth.com/rpc \
+  --private-key $PRIVATE_KEY
+```
+
+This enables the 0.05% protocol fee to your address!
 
 ### 2. Configure Frontend
 
@@ -32,6 +53,11 @@ export const CONTRACTS = {
 export const INIT_CODE_HASH = "0xYOUR_INIT_CODE_HASH";
 ```
 
+**Get INIT_CODE_HASH:**
+```bash
+cast call <FACTORY_ADDRESS> 'INIT_CODE_HASH()' --rpc-url https://mainnet.megaeth.com/rpc
+```
+
 ### 3. Run Frontend
 ```bash
 cd frontend
@@ -39,102 +65,70 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000
+---
+
+## Fee Structure
+
+- **Swap Fee:** 0.3% total
+  - 0.25% to liquidity providers
+  - 0.05% to protocol (via feeTo address)
+- **Lock Fee:** 0.05 ETH
 
 ---
 
-## 📁 Structure
-```
-megaswap-mainnet/
-├── contracts/           # Solidity contracts
-│   ├── src/            # 5 contracts (Factory, Router, Pair, Locker, ERC20)
-│   ├── script/         # Deployment script
-│   └── deploy.sh       # One-command deploy
-├── frontend/           # Next.js 14 + TypeScript
-│   ├── components/     # SwapCard, PoolCard, LockCard, etc.
-│   ├── hooks/          # useWeb3, useTokenBalance, useTokenPrice
-│   ├── lib/            # Blockchain interaction
-│   ├── config/         # Configuration
-│   └── abis/           # Contract ABIs
-└── README.md
-```
+## Important Notes
+
+1. **MegaEVM Gas Estimation:** Deployment uses `--skip-simulation` and `--gas-limit 30000000` flags as required by MegaETH docs
+
+2. **Set feeTo Address:** After deploying Factory, you MUST call `setFeeTo()` to enable protocol fees
+
+3. **DexScreener:** May not have MegaETH indexed yet. Frontend will work without it (prices from Router)
+
+4. **INIT_CODE_HASH:** Must match in BOTH the deployed Router contract AND the frontend config
 
 ---
 
-## 🎯 Features
-
-### Swap
-- Real-time quotes
-- DexScreener price display
-- Separate approve button
-- Slippage settings
-- Balance checking
-
-### Pool
-- Add/Remove liquidity tabs
-- Dual token approvals
-- LP balance display
-- Percentage removal (25/50/75/100%)
-- Pool share calculation
-
-### Lock
-- Lock LP tokens
-- Search locks by token
-- Duration presets
-- Withdraw when unlocked
-
-### Token Import
-- Auto-fetch from DexScreener
-- Logo & socials display
-- Balance display
-- Custom token storage
-
----
-
-## 🌐 Network
-
-- **Mainnet RPC:** https://mainnet.megaeth.com/rpc
-- **Chain ID:** 4326 (0x10e6)
-- **Explorer:** https://megaeth.blockscout.com
-- **WETH:** 0x4200000000000000000000000000000000000006
-
----
-
-## 💰 Gas Costs
+## Costs
 
 - Factory: ~0.01 ETH
-- Router: ~0.015 ETH
+- Router: ~0.015 ETH  
 - Locker: ~0.005 ETH
 - **Total: ~0.03 ETH**
 
 ---
 
-## 🚀 Deploy to Production
-```bash
-# Build frontend
-cd frontend
-npm run build
-
-# Deploy to Vercel/Netlify
-# Or serve with:
-npm start
+## Structure
+```
+megaswap-mainnet/
+├── contracts/
+│   ├── src/
+│   │   ├── UniswapV2Factory.sol
+│   │   ├── UniswapV2Router02.sol
+│   │   ├── UniswapV2Pair.sol (0.3% fee = 0.25% LP + 0.05% protocol)
+│   │   ├── UniswapV2ERC20.sol
+│   │   └── MegaLocker.sol
+│   ├── script/DeployMainnet.s.sol
+│   └── deploy.sh
+└── frontend/
+    ├── components/ (SwapCard, PoolCard, LockCard, etc.)
+    ├── hooks/ (useWeb3, useTokenBalance, useTokenPrice)
+    ├── lib/ (blockchain.ts)
+    └── config/ (network config)
 ```
 
 ---
 
-## ✅ Complete Checklist
+## Post-Deployment Checklist
 
-- [x] 5 Solidity contracts
-- [x] Deployment script
-- [x] Complete frontend
-- [x] Separate approve flows
-- [x] DexScreener integration
-- [x] Token import
-- [x] LP locking
-- [x] Remove liquidity
-- [x] Production styling
-- [x] MetaMask integration
+- [ ] Deploy all contracts
+- [ ] Call `setFeeTo()` on Factory with your address
+- [ ] Get INIT_CODE_HASH from Factory
+- [ ] Update frontend config with all addresses
+- [ ] Test creating a pair
+- [ ] Test swaps
+- [ ] Test add/remove liquidity
+- [ ] Test locking
 
-**NOTHING IS MISSING. PRODUCTION READY.**
+---
 
 Built for MegaETH Mainnet 🚀
