@@ -11,7 +11,7 @@ contract DeployMainnet is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
         
-        address WETH = 0x420DD381b31aEf6683db6B902084cB0FFECe40Da;
+        address WETH = 0x4200000000000000000000000000000000000006;
         
         vm.startBroadcast(deployerPrivateKey);
         
