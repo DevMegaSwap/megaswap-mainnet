@@ -34,11 +34,9 @@ contract DeployMainnet is Script {
         
         vm.stopBroadcast();
         
-        console.log("\n=== MAINNET DEPLOYMENT COMPLETE ===");
-        console.log("WETH (existing):", WETH);
+        console.log("\nWETH:", WETH);
         console.log("Factory:", address(factory));
         console.log("Router:", address(router));
         console.log("Locker:", address(locker));
-        console.log("\nSave these addresses for frontend!");
     }
 }
