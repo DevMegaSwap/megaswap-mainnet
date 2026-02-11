@@ -138,7 +138,7 @@ export default function Home() {
           <p className="mb-2">MegaSwap © 2026 | Built on MegaETH</p>
           <div className="flex justify-center gap-6 text-sm">
             
-              href="https://explorer.megaeth.io"
+              href="https://megaeth.blockscout.com"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-primary transition-colors"

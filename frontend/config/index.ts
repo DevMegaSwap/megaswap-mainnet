@@ -1,22 +1,22 @@
-export const MAINNET_CHAIN_ID = 81457;
+export const MAINNET_CHAIN_ID = 4326;
 
 export const CONTRACTS = {
   FACTORY: "PASTE_YOUR_FACTORY_ADDRESS_HERE",
   ROUTER: "PASTE_YOUR_ROUTER_ADDRESS_HERE",
   LOCKER: "PASTE_YOUR_LOCKER_ADDRESS_HERE",
-  WETH: "0x420DD381b31aEf6683db6B902084cB0FFECe40Da"
+  WETH: "0x4200000000000000000000000000000000000006"
 };
 
 export const MAINNET_NETWORK = {
-  chainId: "0x13e31",
+  chainId: "0x10e6",
   chainName: "MegaETH",
   nativeCurrency: {
     name: "ETH",
     symbol: "ETH",
     decimals: 18
   },
-  rpcUrls: ["https://mainnet.megaeth.io/rpc"],
-  blockExplorerUrls: ["https://explorer.megaeth.io"]
+  rpcUrls: ["https://mainnet.megaeth.com/rpc"],
+  blockExplorerUrls: ["https://megaeth.blockscout.com"]
 };
 
 export const DEFAULT_TOKENS = [

@@ -26,7 +26,7 @@ export const CONTRACTS = {
   FACTORY: "0xYOUR_FACTORY",
   ROUTER: "0xYOUR_ROUTER",
   LOCKER: "0xYOUR_LOCKER",
-  WETH: "0x420DD381b31aEf6683db6B902084cB0FFECe40Da"
+  WETH: "0x4200000000000000000000000000000000000006"
 };
 
 export const INIT_CODE_HASH = "0xYOUR_INIT_CODE_HASH";
@@ -93,10 +93,10 @@ megaswap-mainnet/
 
 ## 🌐 Network
 
-- **Mainnet RPC:** https://mainnet.megaeth.io/rpc
-- **Chain ID:** 81457 (0x13e31)
-- **Explorer:** https://explorer.megaeth.io
-- **WETH:** 0x420DD381b31aEf6683db6B902084cB0FFECe40Da
+- **Mainnet RPC:** https://mainnet.megaeth.com/rpc
+- **Chain ID:** 4326 (0x10e6)
+- **Explorer:** https://megaeth.blockscout.com
+- **WETH:** 0x4200000000000000000000000000000000000006
 
 ---
 

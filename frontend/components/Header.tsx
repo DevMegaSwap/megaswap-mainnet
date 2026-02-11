@@ -89,7 +89,7 @@ export default function Header({
                         📋 Copy Address
                       </button>
                       
-                        href={`https://explorer.megaeth.io/address/${account}`}
+                        href={`https://megaeth.blockscout.com/address/${account}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="block w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors"

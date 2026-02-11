@@ -14,7 +14,7 @@ cd "$(dirname "$0")"
 forge install foundry-rs/forge-std --no-commit 2>/dev/null || true
 
 forge script script/DeployMainnet.s.sol:DeployMainnet \
-  --rpc-url https://mainnet.megaeth.io/rpc \
+  --rpc-url https://mainnet.megaeth.com/rpc \
   --broadcast \
   --skip-simulation \
   --legacy
