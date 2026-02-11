@@ -1,6 +1,6 @@
-import { ethers } from "ethers";
+export const MAINNET_CHAIN_ID = 4326;
 
-export const MEGAETH_NETWORK = {
+export const MAINNET_NETWORK = {
   chainId: "0x10e6",
   chainName: "MegaETH Mainnet",
   nativeCurrency: {
@@ -11,6 +11,8 @@ export const MEGAETH_NETWORK = {
   rpcUrls: ["https://mainnet.megaeth.com/rpc"],
   blockExplorerUrls: ["https://megaeth.blockscout.com"],
 };
+
+export const MEGAETH_NETWORK = MAINNET_NETWORK;
 
 export const CONTRACTS = {
   FACTORY: "0x6b0eef2bB4Ad9b28abA6cAE3736EF97d7E3F56b4",
