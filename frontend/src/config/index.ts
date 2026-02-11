@@ -1,3 +1,17 @@
+export const MAINNET_CHAIN_ID = 4326;
+
+export const MAINNET_NETWORK = {
+  chainId: '0x10e6',
+  chainName: 'MegaETH',
+  rpcUrls: ['https://mainnet.megaeth.com/rpc'],
+  nativeCurrency: {
+    name: 'ETH',
+    symbol: 'ETH',
+    decimals: 18
+  },
+  blockExplorerUrls: ['https://megaeth.blockscout.com']
+};
+
 export const CONTRACTS = {
   FACTORY: "0x6b0eef2bB4Ad9b28abA6cAE3736EF97d7E3F56b4",
   ROUTER: "0xd8c5512a3481Dcc7fEb3F45fEb1CD116753F04b7",
@@ -5,9 +19,23 @@ export const CONTRACTS = {
   WETH: "0x4200000000000000000000000000000000000006"
 };
 
-export const NETWORK = {
-  chainId: 4326,
-  chainName: "MegaETH",
-  rpcUrls: ["https://mainnet.megaeth.com/rpc"],
-  blockExplorerUrls: ["https://megaeth.blockscout.com"]
-};
+export const INIT_CODE_HASH = "0x1474833e64fa906d3ae877b14fdd48c3bd13e0da323e86beb74e8e736980c175";
+
+export const NETWORK = MAINNET_NETWORK;
+
+export const DEFAULT_TOKENS = [
+  {
+    address: "ETH",
+    symbol: "ETH",
+    name: "Ethereum",
+    decimals: 18,
+    logoURI: ""
+  },
+  {
+    address: CONTRACTS.WETH,
+    symbol: "WETH",
+    name: "Wrapped Ether",
+    decimals: 18,
+    logoURI: ""
+  }
+];

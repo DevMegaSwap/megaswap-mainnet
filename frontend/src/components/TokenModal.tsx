@@ -206,7 +206,7 @@ export default function TokenModal({ isOpen, onClose, onSelectToken, provider, a
                     {token.socials && token.socials.length > 0 && (
                       <div className="flex gap-1 mt-1">
                         {token.socials.slice(0, 3).map((social: any, idx: number) => (
-                          
+                          <a
                             key={idx}
                             href={social.url}
                             target="_blank"

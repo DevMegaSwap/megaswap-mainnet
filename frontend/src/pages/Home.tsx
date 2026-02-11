@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from 'react';
 import Header from '@/components/Header';
 import SwapCard from '@/components/SwapCard';
@@ -30,7 +28,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
-      {/* Header */}
       <Header
         account={account}
         isConnected={isConnected}
@@ -40,9 +37,7 @@ export default function Home() {
         onSwitchNetwork={switchToMainnet}
       />
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Navigation Tabs */}
         <div className="flex justify-center mb-8">
           <div className="inline-flex bg-white rounded-2xl p-1 shadow-lg">
             <button
@@ -78,7 +73,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Cards Container */}
         <div className="flex justify-center">
           {activeTab === "swap" && (
             <SwapCard
@@ -104,68 +98,39 @@ export default function Home() {
           )}
         </div>
 
-        {/* Info Section */}
         <div className="mt-12 max-w-4xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white rounded-2xl p-6 shadow-lg">
               <div className="text-4xl mb-3">⚡</div>
               <h3 className="font-bold text-lg mb-2">Lightning Fast</h3>
               <p className="text-gray-600 text-sm">
-                Built on MegaETH for instant transactions with minimal fees
+                Built on MegaETH for instant transactions
               </p>
             </div>
 
             <div className="bg-white rounded-2xl p-6 shadow-lg">
               <div className="text-4xl mb-3">🔒</div>
-              <h3 className="font-bold text-lg mb-2">Secure & Audited</h3>
+              <h3 className="font-bold text-lg mb-2">Secure</h3>
               <p className="text-gray-600 text-sm">
-                Uniswap V2 fork with battle-tested smart contracts
+                Uniswap V2 fork with battle-tested contracts
               </p>
             </div>
 
             <div className="bg-white rounded-2xl p-6 shadow-lg">
               <div className="text-4xl mb-3">💎</div>
-              <h3 className="font-bold text-lg mb-2">LP Token Locking</h3>
+              <h3 className="font-bold text-lg mb-2">LP Locking</h3>
               <p className="text-gray-600 text-sm">
-                Lock liquidity tokens to build trust in your project
+                Lock liquidity tokens safely
               </p>
             </div>
           </div>
         </div>
 
-        {/* Footer */}
         <footer className="mt-16 text-center text-gray-600">
           <p className="mb-2">MegaSwap © 2026 | Built on MegaETH</p>
-          <div className="flex justify-center gap-6 text-sm">
-            
-              href="https://megaeth.blockscout.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-primary transition-colors"
-            >
-              Explorer
-            </a>
-            
-              href="https://docs.megaeth.io"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-primary transition-colors"
-            >
-              Docs
-            </a>
-            
-              href="https://github.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-primary transition-colors"
-            >
-              GitHub
-            </a>
-          </div>
         </footer>
       </main>
 
-      {/* Token Modal */}
       <TokenModal
         isOpen={tokenModalOpen}
         onClose={() => {

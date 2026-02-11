@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
+//@ts-ignore
 import ERC20_ABI from '@/abis/erc20.json';
-import ROUTER_ABI from '@/abis/router.json';
 
 export async function checkApproval(provider: any, tokenAddress: string, owner: string, spender: string): Promise<bigint> {
   const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
@@ -30,5 +30,46 @@ export async function getTokenBalance(provider: any, tokenAddress: string, accou
   return ethers.formatUnits(balance, 18);
 }
 
-export async function fetchTokenInfo() { return null; }
-export async function fetchDexScreenerPrice() { return null; }
+export async function fetchTokenInfo(tokenAddress: string) { 
+  return null; 
+}
+
+export async function fetchDexScreenerPrice(tokenAddress: string) { 
+  return null; 
+}
+
+export async function getSwapQuote(provider: any, tokenIn: string, tokenOut: string, amountIn: string) {
+  return null;
+}
+
+export async function executeSwap(provider: any, tokenIn: string, tokenOut: string, amountIn: string, amountOutMin: string, account: string) {
+  return null;
+}
+
+export async function getPairInfo(provider: any, tokenA: string, tokenB: string) {
+  return null;
+}
+
+export async function addLiquidity(provider: any, tokenA: string, tokenB: string, amountA: string, amountB: string, account: string) {
+  return null;
+}
+
+export async function removeLiquidity(provider: any, tokenA: string, tokenB: string, liquidity: string, account: string) {
+  return null;
+}
+
+export async function createLock(provider: any, token: string, amount: string, unlockTime: number, account: string) {
+  return null;
+}
+
+export async function withdrawLock(provider: any, lockId: number, account: string) {
+  return null;
+}
+
+export async function getUserLocks(provider: any, account: string) {
+  return [];
+}
+
+export async function getTokenLocks(provider: any, tokenAddress: string) {
+  return [];
+}
