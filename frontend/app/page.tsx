@@ -68,7 +68,7 @@ export default function Home() {
   };
 
   const getSelectedTokens = () => {
-    const selected = [];
+    const selected: string[] = [];
     if (tokenModalMode === "in" && tokenOut) selected.push(tokenOut.address);
     if (tokenModalMode === "out" && tokenIn) selected.push(tokenIn.address);
     if (tokenModalMode === "pA" && poolTokenB) selected.push(poolTokenB.address);
