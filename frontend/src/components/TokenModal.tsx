@@ -1,238 +1,255 @@
 "use client";
+import { useState, useEffect } from "react";
+import { ethers } from "ethers";
+import { CONTRACTS, DEFAULT_TOKENS } from "@/config";
+import { useTokenBalance } from "@/hooks/useTokenBalance";
+import ERC20_ABI from "@/abis/erc20.json";
 
-import { useState, useEffect } from 'react';
-import { ethers } from 'ethers';
-import { DEFAULT_TOKENS } from '@/config';
-import { fetchTokenInfo, getTokenBalance } from '@/lib/blockchain';
-import ERC20_ABI from '@/abis/erc20.json';
-
-interface TokenModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSelect: (token: any) => void;
-  provider: ethers.BrowserProvider | null;
-  account: string;
-}
-
-export default function TokenModal({ isOpen, onClose, onSelect, selectedTokens = [], provider, account }: any) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [customTokens, setCustomTokens] = useState<any[]>([]);
+export default function TokenModal({ isOpen, onClose, onSelect, selectedTokens = [], account, provider }: any) {
+  const [search, setSearch] = useState("");
+  const [customToken, setCustomToken] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [balances, setBalances] = useState<Record<string, string>>({});
+  const [importedTokens, setImportedTokens] = useState<any[]>([]);
 
-  // Load custom tokens from localStorage
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('customTokens');
-      if (saved) {
-        setCustomTokens(JSON.parse(saved));
-      }
-    }
-  }, []);
-
-  // Fetch balances for all tokens
-  useEffect(() => {
-    if (!provider || !account) return;
-
-    const fetchBalances = async () => {
-      const allTokens = [...DEFAULT_TOKENS, ...customTokens];
-      const newBalances: Record<string, string> = {};
-
-      for (const token of allTokens) {
-        try {
-          const balance = await getTokenBalance(provider, token.address, account);
-          newBalances[token.address] = balance;
-        } catch (error) {
-          newBalances[token.address] = "0";
-        }
-      }
-
-      setBalances(newBalances);
+    const handleEscape = (e: any) => {
+      if (e.key === "Escape") onClose();
     };
-
-    fetchBalances();
-  }, [provider, account, customTokens]);
-
-  const handleImportToken = async () => {
-    if (!provider || !searchQuery || !ethers.isAddress(searchQuery)) {
-      alert("Invalid address");
-      return;
+    if (isOpen) {
+      document.addEventListener("keydown", handleEscape);
+      return () => document.removeEventListener("keydown", handleEscape);
     }
+  }, [isOpen, onClose]);
 
-    setLoading(true);
+  useEffect(() => {
+    if (search.length === 42 && search.startsWith("0x") && provider) {
+      checkCustomToken(search);
+    } else {
+      setCustomToken(null);
+    }
+  }, [search, provider]);
 
+  const checkCustomToken = async (address: string) => {
     try {
-      // Try to fetch from DexScreener first
-      const dexScreenerInfo = await fetchTokenInfo(searchQuery);
+      setLoading(true);
+      const code = await provider.getCode(address);
       
-      // Fallback to blockchain
-      const tokenContract = new ethers.Contract(searchQuery, ERC20_ABI, provider);
-      const [symbol, name, decimals] = await Promise.all([
-        tokenContract.symbol(),
-        tokenContract.name(),
-        tokenContract.decimals()
-      ]);
-
-      const newToken = {
-        address: searchQuery,
-        symbol: dexScreenerInfo?.symbol || symbol,
-        name: dexScreenerInfo?.name || name,
-        decimals: Number(decimals),
-        logoURI: dexScreenerInfo?.logoURI || "",
-        socials: dexScreenerInfo?.socials || []
-      };
-
-      // Check if already exists
-      const exists = [...DEFAULT_TOKENS, ...customTokens].some(
-        t => t.address.toLowerCase() === searchQuery.toLowerCase()
-      );
-
-      if (exists) {
-        alert("Token already imported");
+      if (code === "0x") {
+        setCustomToken(null);
         return;
       }
 
-      const updated = [...customTokens, newToken];
-      setCustomTokens(updated);
-      localStorage.setItem('customTokens', JSON.stringify(updated));
+      const contract = new ethers.Contract(address, ERC20_ABI, provider);
       
-      setSearchQuery("");
-      alert("Token imported successfully!");
+      const [symbol, name, decimals] = await Promise.all([
+        contract.symbol(),
+        contract.name(),
+        contract.decimals()
+      ]);
+
+      const token = {
+        address,
+        symbol,
+        name,
+        decimals: Number(decimals),
+        custom: true
+      };
+
+      setCustomToken(token);
     } catch (error) {
-      console.error("Import error:", error);
-      alert("Failed to import token");
+      console.error("Error checking token:", error);
+      setCustomToken(null);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSelectToken = (token: any) => {
+  const handleImport = (token: any) => {
+    const exists = importedTokens.find((t: any) => t.address.toLowerCase() === token.address.toLowerCase());
+    if (!exists) {
+      setImportedTokens([...importedTokens, token]);
+    }
     onSelect(token);
     onClose();
+    setSearch("");
+    setCustomToken(null);
   };
 
-  const formatBalance = (balance: string) => {
-    const num = parseFloat(balance);
-    if (num === 0) return "0";
-    if (num < 0.0001) return "< 0.0001";
-    if (num < 1) return num.toFixed(4);
-    if (num < 1000) return num.toFixed(2);
-    return num.toLocaleString(undefined, { maximumFractionDigits: 2 });
-  };
+  const allTokens = [...DEFAULT_TOKENS, ...importedTokens];
 
-  const allTokens = [...DEFAULT_TOKENS, ...customTokens];
-  const filteredTokens = allTokens.filter(token =>
-    token.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    token.address.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredTokens = allTokens.filter(
+    (t: any) =>
+      t.symbol.toLowerCase().includes(search.toLowerCase()) ||
+      t.name.toLowerCase().includes(search.toLowerCase()) ||
+      t.address.toLowerCase().includes(search.toLowerCase())
   );
 
   if (!isOpen) return null;
 
+  const getTokenIcon = (token: any) => {
+    if (token.symbol === "ETH") return "Ξ";
+    if (token.symbol === "WETH") return "Ξ";
+    if (token.symbol === "MCOIN") return "🍰";
+    if (token.symbol === "FLUFF") return "🤖";
+    return token.symbol.charAt(0);
+  };
+
+  const getTokenBg = (token: any) => {
+    if (token.symbol === "ETH" || token.symbol === "WETH") return "linear-gradient(135deg,#627eea,#8c9eff)";
+    if (token.symbol === "MCOIN") return "linear-gradient(135deg,var(--purple),var(--pink))";
+    if (token.symbol === "FLUFF") return "linear-gradient(135deg,#00c853,#69f0ae)";
+    return "linear-gradient(135deg,var(--purple),var(--pink))";
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md max-h-[80vh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-bold">Select Token</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 text-2xl"
-          >
-            ×
-          </button>
+    <div className={`mod ${isOpen ? "open" : ""}`} onClick={onClose}>
+      <div className="mod-c" onClick={(e) => e.stopPropagation()}>
+        <div className="mod-h">
+          <span className="mod-t">Select Token</span>
+          <button className="mod-x" onClick={onClose}>✕</button>
         </div>
+        <div className="mod-b">
+          <input 
+            type="text" 
+            className="tsrch" 
+            placeholder="Search name or paste address (0x...)" 
+            value={search} 
+            onChange={(e) => setSearch(e.target.value)} 
+            autoFocus 
+          />
 
-        {/* Search */}
-        <div className="p-4">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search or paste address"
-              className="flex-1 px-4 py-3 rounded-xl bg-gray-50 outline-none focus:ring-2 focus:ring-primary"
-            />
-            {ethers.isAddress(searchQuery) && (
-              <button
-                onClick={handleImportToken}
-                disabled={loading}
-                className="px-4 py-3 bg-primary text-white rounded-xl font-semibold hover:bg-opacity-90 disabled:bg-gray-300"
-              >
-                {loading ? "..." : "Import"}
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Token List */}
-        <div className="flex-1 overflow-y-auto px-4 pb-4">
-          {filteredTokens.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              {ethers.isAddress(searchQuery) 
-                ? "Click Import to add this token"
-                : "No tokens found"}
+          {loading && (
+            <div style={{ textAlign: "center", padding: "20px", color: "var(--dim)" }}>
+              <span className="spin"></span> Checking token...
             </div>
-          ) : (
-            <div className="space-y-1">
-              {filteredTokens.map((token) => (
-                <button
-                  key={token.address}
-                  onClick={() => handleSelectToken(token)}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors"
-                >
-                  {/* Logo */}
-                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-                    {token.logoURI ? (
-                      <img 
-                        src={token.logoURI} 
-                        alt={token.symbol}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <span className="text-gray-500 font-semibold">
-                        {token.symbol.slice(0, 2)}
-                      </span>
-                    )}
-                  </div>
+          )}
 
-                  {/* Info */}
-                  <div className="flex-1 text-left">
-                    <div className="font-semibold">{token.symbol}</div>
-                    <div className="text-sm text-gray-500">{token.name}</div>
-                    {token.socials && token.socials.length > 0 && (
-                      <div className="flex gap-1 mt-1">
-                        {token.socials.slice(0, 3).map((social: any, idx: number) => (
-                          <a
-                            key={idx}
-                            href={social.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="text-xs text-blue-500 hover:underline"
-                          >
-                            {social.type}
-                          </a>
-                        ))}
-                      </div>
-                    )}
+          {customToken && !loading && (
+            <div style={{ 
+              padding: "12px", 
+              background: "rgba(255,215,64,.1)", 
+              border: "1px solid rgba(255,215,64,.3)", 
+              borderRadius: "12px", 
+              marginBottom: "12px" 
+            }}>
+              <div style={{ fontSize: "13px", color: "var(--yellow)", marginBottom: "8px" }}>
+                ⚠️ Unknown token
+              </div>
+              <div className="tli" style={{ background: "var(--card)", marginBottom: "8px" }}>
+                <div className="tli-i">
+                  <span className="ti" style={{ background: getTokenBg(customToken) }}>
+                    {getTokenIcon(customToken)}
+                  </span>
+                </div>
+                <div className="tli-info">
+                  <div className="tli-n">{customToken.symbol}</div>
+                  <div className="tli-s">{customToken.name}</div>
+                  <div style={{ fontSize: "10px", color: "var(--dim)", marginTop: "2px" }}>
+                    {customToken.address.slice(0, 10)}...{customToken.address.slice(-8)}
                   </div>
+                </div>
+              </div>
+              <button 
+                onClick={() => handleImport(customToken)}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  background: "linear-gradient(135deg,var(--purple),var(--pink))",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "10px",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  fontFamily: "var(--font)"
+                }}
+              >
+                Import Token
+              </button>
+            </div>
+          )}
 
-                  {/* Balance */}
-                  <div className="text-right">
-                    <div className="font-semibold">
-                      {formatBalance(balances[token.address] || "0")}
-                    </div>
-                    <div className="text-xs text-gray-500">{token.symbol}</div>
-                  </div>
-                </button>
-              ))}
+          {!customToken && !loading && search.length === 42 && search.startsWith("0x") && (
+            <div style={{ textAlign: "center", padding: "20px", color: "var(--dim)", fontSize: "13px" }}>
+              Token not found at this address
+            </div>
+          )}
+
+          {(!search || search.length < 42) && filteredTokens.map((token: any) => (
+            <TokenRow
+              key={token.address}
+              token={token}
+              account={account}
+              provider={provider}
+              isDisabled={selectedTokens.includes(token.address)}
+              onSelect={() => {
+                onSelect(token);
+                onClose();
+                setSearch("");
+              }}
+              getTokenIcon={getTokenIcon}
+              getTokenBg={getTokenBg}
+            />
+          ))}
+
+          {filteredTokens.length === 0 && !loading && !customToken && search && search.length < 42 && (
+            <div style={{ textAlign: "center", padding: "20px", color: "var(--dim)", fontSize: "13px" }}>
+              No tokens found
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function TokenRow({ token, account, provider, isDisabled, onSelect, getTokenIcon, getTokenBg }: any) {
+  const balance = useTokenBalance(account, token.address, provider);
+
+  const formatBalance = (bal: string) => {
+    const num = parseFloat(bal);
+    if (num === 0) return "0.00";
+    if (num < 0.0001) return "< 0.0001";
+    if (num < 1) return num.toFixed(6);
+    if (num >= 1000000) return (num / 1000000).toFixed(2) + "M";
+    if (num >= 1000) return (num / 1000).toFixed(2) + "K";
+    return num.toFixed(4);
+  };
+
+  return (
+    <div
+      className="tli"
+      onClick={isDisabled ? undefined : onSelect}
+      style={{
+        opacity: isDisabled ? 0.5 : 1,
+        cursor: isDisabled ? "not-allowed" : "pointer",
+      }}
+    >
+      <div className="tli-i">
+        <span className="ti" style={{ background: getTokenBg(token) }}>
+          {getTokenIcon(token)}
+        </span>
+      </div>
+      <div className="tli-info">
+        <div className="tli-n">
+          {token.symbol}
+          {token.custom && (
+            <span style={{ 
+              marginLeft: "6px", 
+              fontSize: "9px", 
+              background: "rgba(255,215,64,.2)", 
+              color: "var(--yellow)", 
+              padding: "2px 6px", 
+              borderRadius: "4px" 
+            }}>
+              IMPORTED
+            </span>
+          )}
+        </div>
+        <div className="tli-s">{token.name}</div>
+      </div>
+      <div className="tli-bal">
+        <div className="tli-b">{formatBalance(balance)}</div>
       </div>
     </div>
   );
