@@ -10,6 +10,7 @@ export default function TokenModal({ isOpen, onClose, onSelect, selectedTokens =
   const [customToken, setCustomToken] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [importedTokens, setImportedTokens] = useState<any[]>([]);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const handleEscape = (e: any) => {
@@ -26,21 +27,31 @@ export default function TokenModal({ isOpen, onClose, onSelect, selectedTokens =
       checkCustomToken(search);
     } else {
       setCustomToken(null);
+      setError("");
     }
-  }, [search, provider]);
+  }, [search, provider, account]);
 
   const checkCustomToken = async (address: string) => {
     try {
       setLoading(true);
+      setError("");
       
-      // Try to create contract and fetch token info directly
+      console.log("Checking token:", address);
+      console.log("Provider:", provider);
+      
       const contract = new ethers.Contract(address, ERC20_ABI, provider);
       
-      const [symbol, name, decimals] = await Promise.all([
-        contract.symbol(),
-        contract.name(),
-        contract.decimals()
-      ]);
+      console.log("Calling symbol...");
+      const symbol = await contract.symbol();
+      console.log("Symbol:", symbol);
+      
+      console.log("Calling name...");
+      const name = await contract.name();
+      console.log("Name:", name);
+      
+      console.log("Calling decimals...");
+      const decimals = await contract.decimals();
+      console.log("Decimals:", decimals);
 
       const token = {
         address,
@@ -50,9 +61,11 @@ export default function TokenModal({ isOpen, onClose, onSelect, selectedTokens =
         custom: true
       };
 
+      console.log("Token found:", token);
       setCustomToken(token);
-    } catch (error) {
-      console.error("Error checking token:", error);
+    } catch (err: any) {
+      console.error("Error checking token:", err);
+      setError(err.message || "Token not found");
       setCustomToken(null);
     } finally {
       setLoading(false);
@@ -162,7 +175,13 @@ export default function TokenModal({ isOpen, onClose, onSelect, selectedTokens =
             </div>
           )}
 
-          {!customToken && !loading && search.length === 42 && search.startsWith("0x") && (
+          {error && !loading && (
+            <div style={{ textAlign: "center", padding: "20px", color: "var(--red)", fontSize: "13px", background: "rgba(255,82,82,.1)", borderRadius: "12px" }}>
+              {error}
+            </div>
+          )}
+
+          {!customToken && !loading && !error && search.length === 42 && search.startsWith("0x") && (
             <div style={{ textAlign: "center", padding: "20px", color: "var(--dim)", fontSize: "13px" }}>
               Token not found at this address
             </div>
