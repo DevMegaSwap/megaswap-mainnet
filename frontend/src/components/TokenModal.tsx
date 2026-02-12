@@ -9,12 +9,12 @@ import ERC20_ABI from '@/abis/erc20.json';
 interface TokenModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectToken: (token: any) => void;
+  onSelect: (token: any) => void;
   provider: ethers.BrowserProvider | null;
   account: string;
 }
 
-export default function TokenModal({ isOpen, onClose, onSelectToken, provider, account }: TokenModalProps) {
+export default function TokenModal({ isOpen, onClose, onSelect, selectedTokens = [], provider, account }: any) {
   const [searchQuery, setSearchQuery] = useState("");
   const [customTokens, setCustomTokens] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -107,7 +107,7 @@ export default function TokenModal({ isOpen, onClose, onSelectToken, provider, a
   };
 
   const handleSelectToken = (token: any) => {
-    onSelectToken(token);
+    onSelect(token);
     onClose();
   };
 
