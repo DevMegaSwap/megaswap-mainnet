@@ -22,7 +22,7 @@ export default function TokenModal({ isOpen, onClose, onSelect, selectedTokens =
   }, [isOpen, onClose]);
 
   useEffect(() => {
-    if (search.length === 42 && search.startsWith("0x") && provider) {
+    if (search.length === 42 && search.startsWith("0x") && provider && account) {
       checkCustomToken(search);
     } else {
       setCustomToken(null);
