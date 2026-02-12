@@ -32,13 +32,8 @@ export default function TokenModal({ isOpen, onClose, onSelect, selectedTokens =
   const checkCustomToken = async (address: string) => {
     try {
       setLoading(true);
-      const code = await provider.getCode(address);
       
-      if (code === "0x") {
-        setCustomToken(null);
-        return;
-      }
-
+      // Try to create contract and fetch token info directly
       const contract = new ethers.Contract(address, ERC20_ABI, provider);
       
       const [symbol, name, decimals] = await Promise.all([
@@ -89,15 +84,13 @@ export default function TokenModal({ isOpen, onClose, onSelect, selectedTokens =
   const getTokenIcon = (token: any) => {
     if (token.symbol === "ETH") return "Ξ";
     if (token.symbol === "WETH") return "Ξ";
-    if (token.symbol === "MCOIN") return "🍰";
-    if (token.symbol === "FLUFF") return "🤖";
+    if (token.symbol === "DUCK") return "🦆";
     return token.symbol.charAt(0);
   };
 
   const getTokenBg = (token: any) => {
     if (token.symbol === "ETH" || token.symbol === "WETH") return "linear-gradient(135deg,#627eea,#8c9eff)";
-    if (token.symbol === "MCOIN") return "linear-gradient(135deg,var(--purple),var(--pink))";
-    if (token.symbol === "FLUFF") return "linear-gradient(135deg,#00c853,#69f0ae)";
+    if (token.symbol === "DUCK") return "linear-gradient(135deg,#ffd740,#ffa726)";
     return "linear-gradient(135deg,var(--purple),var(--pink))";
   };
 
