@@ -16,26 +16,26 @@ export default function Home() {
   const [showTokenModal, setShowTokenModal] = useState(false);
   const [tokenModalMode, setTokenModalMode] = useState("in");
   
-  const [tokenIn, setTokenIn] = useState({ address: "ETH", symbol: "ETH", name: "Ether", decimals: 18 });
-  const [tokenOut, setTokenOut] = useState(null);
-  const [poolTokenA, setPoolTokenA] = useState({ address: "ETH", symbol: "ETH", name: "Ether", decimals: 18 });
-  const [poolTokenB, setPoolTokenB] = useState(null);
+  const [tokenIn, setTokenIn] = useState<any>({ address: "ETH", symbol: "ETH", name: "Ether", decimals: 18 });
+  const [tokenOut, setTokenOut] = useState<any>(null);
+  const [poolTokenA, setPoolTokenA] = useState<any>({ address: "ETH", symbol: "ETH", name: "Ether", decimals: 18 });
+  const [poolTokenB, setPoolTokenB] = useState<any>(null);
 
   const connectWallet = async () => {
-    if (typeof window !== "undefined" && window.ethereum) {
+    if (typeof window !== "undefined" && (window as any).ethereum) {
       try {
-        const provider = new ethers.BrowserProvider(window.ethereum);
+        const provider = new ethers.BrowserProvider((window as any).ethereum);
         const accounts = await provider.send("eth_requestAccounts", []);
         setAccount(accounts[0]);
         setProvider(provider);
         try {
-          await window.ethereum.request({
+          await (window as any).ethereum.request({
             method: "wallet_switchEthereumChain",
             params: [{ chainId: MEGAETH_NETWORK.chainId }],
           });
-        } catch (error) {
+        } catch (error: any) {
           if (error.code === 4902) {
-            await window.ethereum.request({
+            await (window as any).ethereum.request({
               method: "wallet_addEthereumChain",
               params: [MEGAETH_NETWORK],
             });
@@ -49,7 +49,7 @@ export default function Home() {
     }
   };
 
-  const openTokenModal = (mode) => {
+  const openTokenModal = (mode: string) => {
     if (mode === "swap") {
       const temp = tokenIn;
       setTokenIn(tokenOut);
@@ -60,7 +60,7 @@ export default function Home() {
     setShowTokenModal(true);
   };
 
-  const handleTokenSelect = (token) => {
+  const handleTokenSelect = (token: any) => {
     if (tokenModalMode === "in") setTokenIn(token);
     else if (tokenModalMode === "out") setTokenOut(token);
     else if (tokenModalMode === "pA") setPoolTokenA(token);
