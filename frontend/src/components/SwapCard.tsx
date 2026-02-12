@@ -1,290 +1,273 @@
 "use client";
+import { useState, useEffect } from "react";
+import { ethers } from "ethers";
+import { useTokenBalance } from "@/hooks/useTokenBalance";
+import { CONTRACTS } from "@/config";
+import ROUTER_ABI from "@/abis/router.json";
+import ERC20_ABI from "@/abis/erc20.json";
 
-import { useState, useEffect } from 'react';
-import { ethers } from 'ethers';
-import { DEFAULT_TOKENS, CONTRACTS } from '@/config';
-import { getSwapQuote, checkApproval, approveToken, executeSwap } from '@/lib/blockchain';
-import { useTokenBalance } from '@/hooks/useTokenBalance';
-import { useTokenPrice } from '@/hooks/useTokenPrice';
-
-interface SwapCardProps {
-  provider: ethers.BrowserProvider | null;
-  account: string;
-  onOpenTokenModal: (callback: (token: any) => void) => void;
-}
-
-export default function SwapCard({ provider, account, onOpenTokenModal }: SwapCardProps) {
-  const [tokenIn, setTokenIn] = useState(DEFAULT_TOKENS[0]);
-  const [tokenOut, setTokenOut] = useState(DEFAULT_TOKENS[1]);
+export default function SwapCard({ account, provider, onOpenTokenModal, tokenIn, tokenOut }: any) {
   const [amountIn, setAmountIn] = useState("");
   const [amountOut, setAmountOut] = useState("");
   const [slippage, setSlippage] = useState(0.5);
+  const [showSettings, setShowSettings] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [quoteLoading, setQuoteLoading] = useState(false);
-  const [needsApproval, setNeedsApproval] = useState(false);
-  const [approving, setApproving] = useState(false);
-  const [error, setError] = useState("");
+  const [quoting, setQuoting] = useState(false);
+  const [status, setStatus] = useState("");
 
-  const { balance: balanceIn } = useTokenBalance(provider, tokenIn.address, account);
-  const { balance: balanceOut } = useTokenBalance(provider, tokenOut.address, account);
-  const { priceData: priceIn } = useTokenPrice(tokenIn.address);
-  const { priceData: priceOut } = useTokenPrice(tokenOut.address);
+  const balanceIn = useTokenBalance(account, tokenIn?.address, provider);
+  const balanceOut = useTokenBalance(account, tokenOut?.address, provider);
 
-  // Check approval when amount or token changes
   useEffect(() => {
-    const checkApprovalStatus = async () => {
-      if (!provider || !amountIn || !account || tokenIn.address === "ETH") {
-        setNeedsApproval(false);
-        return;
-      }
-
-      try {
-        const amountWei = ethers.parseUnits(amountIn, tokenIn.decimals);
-        const allowance = await checkApproval(provider, tokenIn.address, account, CONTRACTS.ROUTER);
-        setNeedsApproval(allowance < amountWei);
-      } catch (error) {
-        console.error("Approval check error:", error);
-        setNeedsApproval(true);
-      }
-    };
-
-    checkApprovalStatus();
-  }, [provider, tokenIn, amountIn, account]);
-
-  // Fetch quote when amount changes
-  useEffect(() => {
-    const fetchQuote = async () => {
-      if (!provider || !amountIn || parseFloat(amountIn) <= 0) {
-        setAmountOut("");
-        return;
-      }
-
-      setQuoteLoading(true);
-      try {
-        const quote = await getSwapQuote(provider, tokenIn, tokenOut, amountIn);
-        setAmountOut(quote);
-      } catch (error) {
-        console.error("Quote error:", error);
-        setAmountOut("0");
-      } finally {
-        setQuoteLoading(false);
-      }
-    };
-
-    const debounce = setTimeout(fetchQuote, 500);
-    return () => clearTimeout(debounce);
-  }, [provider, tokenIn, tokenOut, amountIn]);
-
-  const handleFlipTokens = () => {
-    setTokenIn(tokenOut);
-    setTokenOut(tokenIn);
-    setAmountIn(amountOut);
-    setAmountOut(amountIn);
-  };
-
-  const handleApprove = async () => {
-    if (!provider || tokenIn.address === "ETH") return;
-
-    setApproving(true);
-    setError("");
-
-    try {
-      const success = await approveToken(provider, tokenIn.address, CONTRACTS.ROUTER);
-      if (success) {
-        setNeedsApproval(false);
+    const timer = setTimeout(() => {
+      if (amountIn && tokenIn && tokenOut && provider && parseFloat(amountIn) > 0) {
+        fetchQuote();
       } else {
-        setError("Approval failed");
+        setAmountOut("");
       }
-    } catch (error: any) {
-      console.error("Approval error:", error);
-      setError(error.message || "Approval failed");
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [amountIn, tokenIn, tokenOut, provider]);
+
+  const fetchQuote = async () => {
+    try {
+      setQuoting(true);
+      const router = new ethers.Contract(CONTRACTS.ROUTER, ROUTER_ABI, provider);
+      const amountInWei = ethers.parseUnits(amountIn, tokenIn.decimals);
+      
+      const path = [
+        tokenIn.address === "ETH" ? CONTRACTS.WETH : tokenIn.address,
+        tokenOut.address === "ETH" ? CONTRACTS.WETH : tokenOut.address
+      ];
+
+      const amounts = await router.getAmountsOut(amountInWei, path);
+      const out = ethers.formatUnits(amounts[1], tokenOut.decimals);
+      setAmountOut(out);
+    } catch (error) {
+      console.error("Quote error:", error);
+      setAmountOut("0");
     } finally {
-      setApproving(false);
+      setQuoting(false);
     }
   };
 
   const handleSwap = async () => {
-    if (!provider || !amountIn || !amountOut) return;
-
-    setLoading(true);
-    setError("");
+    if (!account || !provider || !tokenIn || !tokenOut || !amountIn || !amountOut || parseFloat(amountOut) === 0) {
+      alert("Please enter a valid amount");
+      return;
+    }
 
     try {
-      const result = await executeSwap(
-        provider,
-        tokenIn,
-        tokenOut,
-        amountIn,
-        amountOut,
-        account,
-        slippage
-      );
+      setLoading(true);
+      setStatus("Preparing swap...");
+      
+      const signer = await provider.getSigner();
+      const router = new ethers.Contract(CONTRACTS.ROUTER, ROUTER_ABI, signer);
+      
+      const amountInWei = ethers.parseUnits(amountIn, tokenIn.decimals);
+      const amountOutWei = ethers.parseUnits(amountOut, tokenOut.decimals);
+      const minAmountOut = (amountOutWei * BigInt(Math.floor((100 - slippage) * 100))) / 10000n;
+      
+      const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
+      
+      const path = [
+        tokenIn.address === "ETH" ? CONTRACTS.WETH : tokenIn.address,
+        tokenOut.address === "ETH" ? CONTRACTS.WETH : tokenOut.address
+      ];
 
-      if (result.success) {
-        setAmountIn("");
-        setAmountOut("");
-        alert("Swap successful!");
+      if (tokenIn.address === "ETH") {
+        setStatus("Swapping...");
+        const tx = await router.swapExactETHForTokens(
+          minAmountOut,
+          path,
+          account,
+          deadline,
+          { value: amountInWei, gasLimit: 300000n }
+        );
+        await tx.wait();
+      } else if (tokenOut.address === "ETH") {
+        setStatus("Approving token...");
+        const tokenContract = new ethers.Contract(tokenIn.address, ERC20_ABI, signer);
+        const allowance = await tokenContract.allowance(account, CONTRACTS.ROUTER);
+        
+        if (allowance < amountInWei) {
+          const approveTx = await tokenContract.approve(CONTRACTS.ROUTER, ethers.MaxUint256);
+          await approveTx.wait();
+        }
+        
+        setStatus("Swapping...");
+        const tx = await router.swapExactTokensForETH(
+          amountInWei,
+          minAmountOut,
+          path,
+          account,
+          deadline,
+          { gasLimit: 300000n }
+        );
+        await tx.wait();
       } else {
-        setError(result.error || "Swap failed");
+        setStatus("Approving token...");
+        const tokenContract = new ethers.Contract(tokenIn.address, ERC20_ABI, signer);
+        const allowance = await tokenContract.allowance(account, CONTRACTS.ROUTER);
+        
+        if (allowance < amountInWei) {
+          const approveTx = await tokenContract.approve(CONTRACTS.ROUTER, ethers.MaxUint256);
+          await approveTx.wait();
+        }
+        
+        setStatus("Swapping...");
+        const tx = await router.swapExactTokensForTokens(
+          amountInWei,
+          minAmountOut,
+          path,
+          account,
+          deadline,
+          { gasLimit: 300000n }
+        );
+        await tx.wait();
       }
+      
+      setStatus("✅ Swap successful!");
+      setAmountIn("");
+      setAmountOut("");
+      setTimeout(() => setStatus(""), 3000);
     } catch (error: any) {
       console.error("Swap error:", error);
-      setError(error.message || "Swap failed");
+      let errorMsg = "Unknown error";
+      if (error.reason) errorMsg = error.reason;
+      else if (error.message) errorMsg = error.message.substring(0, 100);
+      setStatus("❌ Swap failed: " + errorMsg);
+      setTimeout(() => setStatus(""), 5000);
     } finally {
       setLoading(false);
     }
   };
 
-  const formatBalance = (balance: string) => {
-    const num = parseFloat(balance);
-    if (num === 0) return "0";
+  const getTokenIcon = (symbol: string) => {
+    if (!symbol) return "?";
+    if (symbol === "ETH" || symbol === "WETH") return "Ξ";
+    if (symbol === "MCOIN") return "🍰";
+    if (symbol === "FLUFF") return "🤖";
+    return symbol.charAt(0);
+  };
+
+  const getTokenBg = (symbol: string) => {
+    if (!symbol) return "linear-gradient(135deg,#666,#888)";
+    if (symbol === "ETH" || symbol === "WETH") return "linear-gradient(135deg,#627eea,#8c9eff)";
+    if (symbol === "MCOIN") return "linear-gradient(135deg,var(--purple),var(--pink))";
+    if (symbol === "FLUFF") return "linear-gradient(135deg,#00c853,#69f0ae)";
+    return "linear-gradient(135deg,var(--purple),var(--pink))";
+  };
+
+  const formatBalance = (bal: string) => {
+    const num = parseFloat(bal);
+    if (num === 0) return "0.00";
     if (num < 0.0001) return "< 0.0001";
-    if (num < 1) return num.toFixed(4);
-    if (num < 1000) return num.toFixed(2);
-    return num.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    if (num < 1) return num.toFixed(6);
+    return num.toFixed(4);
+  };
+
+  const formatAmount = (val: string) => {
+    if (!val) return "";
+    const num = parseFloat(val);
+    if (num === 0) return "0";
+    if (num < 0.000001) return "< 0.000001";
+    if (num < 0.01) return num.toFixed(8);
+    if (num < 1) return num.toFixed(6);
+    return num.toFixed(4);
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-md">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold">Swap</h2>
-        <button
-          onClick={() => {/* Settings modal */}}
-          className="text-gray-500 hover:text-gray-700"
-        >
-          ⚙️
-        </button>
+    <>
+      <div className={`sett ${showSettings ? "open" : ""}`}>
+        <div className="sett-lab">Slippage Tolerance</div>
+        <div className="slip-ops">
+          <button className={`sbtn ${slippage === 0.1 ? "on" : ""}`} onClick={() => setSlippage(0.1)}>0.1%</button>
+          <button className={`sbtn ${slippage === 0.5 ? "on" : ""}`} onClick={() => setSlippage(0.5)}>0.5%</button>
+          <button className={`sbtn ${slippage === 1 ? "on" : ""}`} onClick={() => setSlippage(1)}>1.0%</button>
+        </div>
       </div>
-
-      {/* Token In */}
-      <div className="bg-gray-50 rounded-xl p-4 mb-2">
-        <div className="flex justify-between mb-2">
-          <span className="text-sm text-gray-500">You pay</span>
-          <span className="text-sm text-gray-500">
-            Balance: {formatBalance(balanceIn)}
-          </span>
+      <div className="card">
+        <div className="card-h">
+          <span className="card-t">Swap</span>
+          <button className="gbtn" onClick={() => setShowSettings(!showSettings)}>⚙️</button>
         </div>
-        <div className="flex items-center gap-3">
-          <input
-            type="text"
-            value={amountIn}
-            onChange={(e) => setAmountIn(e.target.value)}
-            placeholder="0.0"
-            className="flex-1 bg-transparent text-2xl font-semibold outline-none"
-          />
-          <button
-            onClick={() => onOpenTokenModal(setTokenIn)}
-            className="flex items-center gap-2 bg-white px-4 py-2 rounded-full hover:bg-gray-100"
-          >
-            {tokenIn.logoURI && (
-              <img src={tokenIn.logoURI} alt={tokenIn.symbol} className="w-6 h-6 rounded-full" />
-            )}
-            <span className="font-semibold">{tokenIn.symbol}</span>
-            <span>▼</span>
-          </button>
-        </div>
-        {priceIn && (
-          <div className="mt-2 text-sm text-gray-500">
-            ${priceIn.priceUsd} 
-            <span className={parseFloat(priceIn.priceChange24h) >= 0 ? "text-green-500 ml-2" : "text-red-500 ml-2"}>
-              {parseFloat(priceIn.priceChange24h) >= 0 ? "+" : ""}{parseFloat(priceIn.priceChange24h).toFixed(2)}%
-            </span>
+        <div className="tib">
+          <div className="tib-lab">
+            <span>You pay</span>
+            <span>Balance: {formatBalance(balanceIn)} <span className="max" onClick={() => setAmountIn(balanceIn)}>MAX</span></span>
           </div>
-        )}
-      </div>
-
-      {/* Flip Button */}
-      <div className="flex justify-center -my-2 relative z-10">
-        <button
-          onClick={handleFlipTokens}
-          className="bg-white border-4 border-gray-50 rounded-xl p-2 hover:bg-gray-100"
-        >
-          ↕️
-        </button>
-      </div>
-
-      {/* Token Out */}
-      <div className="bg-gray-50 rounded-xl p-4 mb-4">
-        <div className="flex justify-between mb-2">
-          <span className="text-sm text-gray-500">You receive</span>
-          <span className="text-sm text-gray-500">
-            Balance: {formatBalance(balanceOut)}
-          </span>
-        </div>
-        <div className="flex items-center gap-3">
-          <input
-            type="text"
-            value={quoteLoading ? "Loading..." : amountOut}
-            readOnly
-            placeholder="0.0"
-            className="flex-1 bg-transparent text-2xl font-semibold outline-none"
-          />
-          <button
-            onClick={() => onOpenTokenModal(setTokenOut)}
-            className="flex items-center gap-2 bg-white px-4 py-2 rounded-full hover:bg-gray-100"
-          >
-            {tokenOut.logoURI && (
-              <img src={tokenOut.logoURI} alt={tokenOut.symbol} className="w-6 h-6 rounded-full" />
-            )}
-            <span className="font-semibold">{tokenOut.symbol}</span>
-            <span>▼</span>
-          </button>
-        </div>
-        {priceOut && (
-          <div className="mt-2 text-sm text-gray-500">
-            ${priceOut.priceUsd}
-            <span className={parseFloat(priceOut.priceChange24h) >= 0 ? "text-green-500 ml-2" : "text-red-500 ml-2"}>
-              {parseFloat(priceOut.priceChange24h) >= 0 ? "+" : ""}{parseFloat(priceOut.priceChange24h).toFixed(2)}%
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* Slippage */}
-      <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-600">Slippage Tolerance</span>
-          <div className="flex gap-2">
-            {[0.5, 1, 3].map((val) => (
-              <button
-                key={val}
-                onClick={() => setSlippage(val)}
-                className={`px-3 py-1 rounded-lg text-sm ${
-                  slippage === val ? "bg-primary text-white" : "bg-white text-gray-700"
-                }`}
-              >
-                {val}%
+          <div className="tib-row">
+            <input className="amt" type="text" placeholder="0" value={amountIn} onChange={(e) => setAmountIn(e.target.value)} />
+            {tokenIn ? (
+              <button className="ts" onClick={() => onOpenTokenModal("in")}>
+                <span className="ti" style={{ background: getTokenBg(tokenIn.symbol) }}>{getTokenIcon(tokenIn.symbol)}</span>
+                {tokenIn.symbol}
+                <span className="chv">▾</span>
               </button>
-            ))}
+            ) : (
+              <button className="ts empty" onClick={() => onOpenTokenModal("in")}>Select Token</button>
+            )}
           </div>
         </div>
-      </div>
-
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-          {error}
+        <div className="sdiv"><button className="sarr" onClick={() => onOpenTokenModal("swap")}>↓</button></div>
+        <div className="tib">
+          <div className="tib-lab">
+            <span>You receive</span>
+            <span>Balance: {formatBalance(balanceOut)}</span>
+          </div>
+          <div className="tib-row">
+            <input 
+              className="amt" 
+              type="text" 
+              placeholder="0" 
+              value={quoting ? "..." : formatAmount(amountOut)} 
+              readOnly 
+            />
+            {tokenOut ? (
+              <button className="ts" onClick={() => onOpenTokenModal("out")}>
+                <span className="ti" style={{ background: getTokenBg(tokenOut.symbol) }}>{getTokenIcon(tokenOut.symbol)}</span>
+                {tokenOut.symbol}
+                <span className="chv">▾</span>
+              </button>
+            ) : (
+              <button className="ts empty" onClick={() => onOpenTokenModal("out")}>Select Token</button>
+            )}
+          </div>
         </div>
-      )}
-
-      {/* Approve Button (separate) */}
-      {needsApproval && tokenIn.address !== "ETH" && (
-        <button
-          onClick={handleApprove}
-          disabled={approving}
-          className="w-full bg-secondary text-white py-4 rounded-xl font-semibold hover:bg-opacity-90 disabled:bg-gray-300 disabled:cursor-not-allowed mb-3"
+        {amountIn && tokenIn && tokenOut && amountOut && parseFloat(amountOut) > 0 && (
+          <div className="pi">
+            <div className="pr"><span>Rate</span><span className="v">1 {tokenIn.symbol} = {formatAmount((parseFloat(amountOut) / parseFloat(amountIn)).toString())} {tokenOut.symbol}</span></div>
+            <div className="pr"><span>Slippage</span><span className="v">{slippage}%</span></div>
+            <div className="pr"><span>Min. received</span><span className="v">{formatAmount((parseFloat(amountOut) * (1 - slippage / 100)).toString())} {tokenOut.symbol}</span></div>
+          </div>
+        )}
+        {status && (
+          <div style={{ 
+            padding: "12px", 
+            borderRadius: "12px", 
+            background: status.includes("✅") ? "rgba(0,230,118,.1)" : status.includes("❌") ? "rgba(255,82,82,.1)" : "rgba(123,63,228,.1)",
+            border: status.includes("✅") ? "1px solid rgba(0,230,118,.3)" : status.includes("❌") ? "1px solid rgba(255,82,82,.3)" : "1px solid rgba(123,63,228,.3)",
+            color: "var(--text)",
+            fontSize: "13px",
+            textAlign: "center",
+            marginTop: "10px"
+          }}>
+            {status}
+          </div>
+        )}
+        <button 
+          className={`abtn ${account && !loading && tokenIn && tokenOut && amountIn && parseFloat(amountOut) > 0 ? "pri" : "dis"}`} 
+          disabled={!account || loading || !tokenIn || !tokenOut || !amountIn || parseFloat(amountOut) <= 0}
+          onClick={handleSwap}
         >
-          {approving ? "Approving..." : `Approve ${tokenIn.symbol}`}
+          {loading ? (
+            <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+              <span className="spin"></span> Swapping...
+            </span>
+          ) : !account ? "Connect Wallet" : !tokenIn || !tokenOut ? "Select tokens" : !amountIn ? "Enter amount" : quoting ? "Getting quote..." : parseFloat(amountOut) <= 0 ? "Insufficient liquidity" : "Swap"}
         </button>
-      )}
-
-      {/* Swap Button */}
-      <button
-        onClick={handleSwap}
-        disabled={loading || !amountIn || !amountOut || needsApproval || !account}
-        className="w-full bg-primary text-white py-4 rounded-xl font-semibold hover:bg-opacity-90 disabled:bg-gray-300 disabled:cursor-not-allowed"
-      >
-        {loading ? "Swapping..." : !account ? "Connect Wallet" : needsApproval ? "Approve First" : "Swap"}
-      </button>
-    </div>
+      </div>
+    </>
   );
 }
