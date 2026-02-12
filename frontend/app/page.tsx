@@ -11,7 +11,7 @@ import LockCard from "@/components/LockCard";
 export default function Home() {
   const [activeTab, setActiveTab] = useState("swap");
   const [account, setAccount] = useState("");
-  const [provider, setProvider] = useState(null);
+  const [provider, setProvider] = useState<any>(null);
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [showTokenModal, setShowTokenModal] = useState(false);
   const [tokenModalMode, setTokenModalMode] = useState("in");
