@@ -131,20 +131,21 @@ export default function PoolCard({ account, provider, onOpenTokenModal, tokenA, 
         const tx = await router.addLiquidityETH(
           tokenB.address,
           amountBWei,
-          minAmountB,
-          minAmountA,
+          amountBWei,
+          0,
           account,
           deadline,
           { 
             value: amountAWei,
             gasLimit: 500000n
           }
-        );
-        await tx.wait();
-        
-        setStatus("✅ Liquidity added!");
-        setAmountA("");
-        setAmountB("");
+        const tx = await router.addLiquidityETH(
+          tokenB.address,
+          amountBWei,
+          minAmountB,
+          minAmountA,
+          account,
+          deadline,
         await checkPair();
         setTimeout(() => setStatus(""), 3000);
         
@@ -161,12 +162,13 @@ export default function PoolCard({ account, provider, onOpenTokenModal, tokenA, 
         setStatus("Adding liquidity...");
         const tx = await router.addLiquidityETH(
           tokenA.address,
+        const tx = await router.addLiquidityETH(
+          tokenA.address,
           amountAWei,
           minAmountA,
           minAmountB,
           account,
           deadline,
-          { 
             value: amountBWei,
             gasLimit: 500000n
           }
@@ -203,8 +205,8 @@ export default function PoolCard({ account, provider, onOpenTokenModal, tokenA, 
           tokenB.address,
           amountAWei,
           amountBWei,
-          minAmountA,
-          minAmountB,
+          0,
+          amountBWei,
           account,
           deadline,
           { gasLimit: 500000n }
